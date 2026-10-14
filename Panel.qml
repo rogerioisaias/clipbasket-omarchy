@@ -822,11 +822,28 @@ Panel {
       // The wtype guard stays in the command as well as in the setting: the
       // binary can be uninstalled between the probe and the keystroke.
       if (root.pasteSelectedClipImmediately && root.wtypeAvailable) {
-        root.runAction("command -v wtype >/dev/null 2>&1 && sleep 0.12 && wtype -M ctrl -P v -p v -m ctrl", false);
+        root.runAction(root.pasteKeystrokeCommand, false);
       }
     } else {
       root.showNotice("Copied.");
     }
+  }
+
+  // Shift+Insert pastes in terminals as well as in GUI apps, where Ctrl+V
+  // would only work in the latter. Omarchy's own clipboard uses it too.
+  readonly property string pasteKeystrokeCommand:
+    "command -v wtype >/dev/null 2>&1 && sleep 0.12 && wtype -M shift -k Insert -m shift"
+
+  // A row click: copy, close the popup, then paste into the focused window.
+  // It pastes regardless of the "Paste immediately" setting, because the
+  // click itself asks for a paste. Without wtype it is a plain copy.
+  function pasteClip(index) {
+    var row = root.rowAt(index);
+    if (!row) return;
+    root.clearTransientState();
+    root.runAction(root.dbCmd("copy " + row.clipId), false);
+    root.close();
+    if (root.wtypeAvailable) root.runAction(root.pasteKeystrokeCommand, false);
   }
 
   // The desktop app derives Markdown by running turndown over the clip's
@@ -1959,15 +1976,18 @@ Panel {
             height: Style.space(62)
             color: selected ? root.fg(0.07) : "transparent"
 
-            // Row body opens the detail view, as the desktop app's row does.
-            // Copying stays an explicit act: the Copy button in the rail, or
-            // Ctrl+Enter from the keyboard.
+            // Left click pastes the clip into the window behind the popup, as
+            // Win+V does on Windows. Right click opens the detail view.
             MouseArea {
               id: rowArea
               anchors.fill: parent
               hoverEnabled: true
+              acceptedButtons: Qt.LeftButton | Qt.RightButton
               onEntered: clipList.currentIndex = clipRow.rowIndex
-              onClicked: root.openDetail(clipRow.rowIndex)
+              onClicked: function (mouse) {
+                if (mouse.button === Qt.RightButton) root.openDetail(clipRow.rowIndex);
+                else root.pasteClip(clipRow.rowIndex);
+              }
             }
 
             // ---- Leading visual: thumbnail for image clips, kind tile otherwise
