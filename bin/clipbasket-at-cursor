@@ -1,0 +1,6 @@
+#!/bin/bash
+# Abre ou fecha o Clipbasket na posição do cursor do mouse (por exemplo, na
+# roda do Hotkey Wheel). Lê o cursor no Hyprland e chama o painel por IPC.
+set -euo pipefail
+read -r x y < <(hyprctl cursorpos -j | jq -r '"\(.x) \(.y)"')
+exec omarchy-shell -q clipbasket-cursor toggleAtCursor "$x" "$y"

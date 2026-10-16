@@ -221,3 +221,14 @@ The macOS and Windows apps are separate, closed-source, and paid — that is wha
 funds this one. If you use Clipbasket on a Mac or a PC too,
 [clipbasket.com](https://clipbasket.com) is where to find it. Nothing in this
 plugin will ever ask you again.
+
+## Open at the mouse pointer (fork)
+
+`bin/clipbasket-at-cursor` opens or closes the popup at the mouse pointer, on the
+monitor under it, instead of under the bar icon. It reads the pointer from
+Hyprland and calls the panel over IPC (`omarchy-shell clipbasket-cursor
+toggleAtCursor <x> <y>`). Handy for a mouse-driven launcher such as the Hotkey
+Wheel; give it the full path, since the plugin's `bin/` is not on `PATH`.
+The popup is `CursorKeyboardPanel.qml`, a copy of the shell's
+`Ui/KeyboardPanel.qml` with the at-cursor mode added; keep it in step with the
+shell when that file changes.

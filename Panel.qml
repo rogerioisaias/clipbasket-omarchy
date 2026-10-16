@@ -474,9 +474,26 @@ Panel {
     root.probeDefaultShortcut();
     if (!toolProbe.running) toolProbe.running = true;
   }
-  function openFromHotkey() { root.controller.show(); }
+  function openFromHotkey() { root.atCursor = false; root.controller.show(); }
+
+  // At-cursor mode: opens the popup at the mouse pointer instead of under the
+  // bar icon. bin/clipbasket-at-cursor reads the pointer from Hyprland and calls
+  //   omarchy-shell clipbasket-cursor toggleAtCursor <x> <y>
+  property bool atCursor: false
+  property point cursorPoint: Qt.point(0, 0)
+
+  IpcHandler {
+    target: "clipbasket-cursor"
+    function toggleAtCursor(x: real, y: real): void {
+      if (root.opened) { root.close(); return; }
+      root.cursorPoint = Qt.point(x, y);
+      root.atCursor = true;
+      root.controller.show();
+    }
+  }
 
   onOpenedChanged: {
+    if (!opened) atCursor = false
     if (root.opened) {
       // Panel-open reset, matching the desktop popup: filter back to all,
       // search cleared, selection on the first row, search field focused.
@@ -1686,8 +1703,10 @@ Panel {
     }
   }
 
-  KeyboardPanel {
+  CursorKeyboardPanel {
     id: panel
+    atCursor: root.atCursor
+    cursorPoint: root.cursorPoint
     anchorItem: root.anchorItem
     owner: root.barIdentity
     bar: root.bar
