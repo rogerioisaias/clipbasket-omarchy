@@ -143,15 +143,20 @@ Panel {
   // disappeared completely, and the search field lost its border. Derived from
   // the theme's own foreground instead, so an overlay is always the opposite of
   // whatever it sits on.
+  // Text color for the popup. The bar's own color follows the wallpaper when
+  // the bar is transparent, and turns dark over a light wallpaper. The popup
+  // keeps the theme's dark background, so it uses the theme text color.
+  readonly property color panelForeground: Color.foreground
+
   function fg(a) {
-    return Qt.rgba(root.barForeground.r, root.barForeground.g, root.barForeground.b, a);
+    return Qt.rgba(root.panelForeground.r, root.panelForeground.g, root.panelForeground.b, a);
   }
 
   // Armed-delete tint. Omarchy's palette exposes no danger role, so this is
   // derived rather than named: a light foreground means a dark theme and wants
   // the light red, while a dark foreground means a light theme, where #ff9b90
   // is a pale wash nobody would read as a warning.
-  readonly property color dangerTint: root.barForeground.hslLightness > 0.5
+  readonly property color dangerTint: root.panelForeground.hslLightness > 0.5
     ? "#ff9b90"
     : "#b3261e"
 
@@ -831,8 +836,14 @@ Panel {
 
   // Shift+Insert pastes in terminals as well as in GUI apps, where Ctrl+V
   // would only work in the latter. Omarchy's own clipboard uses it too.
+  // Electron apps with a built-in terminal (Claude Desktop) ignore
+  // Shift+Insert there, so they get Ctrl+Shift+V, which pastes in both
+  // their terminal and their text fields.
   readonly property string pasteKeystrokeCommand:
-    "command -v wtype >/dev/null 2>&1 && sleep 0.12 && wtype -M shift -k Insert -m shift"
+    "command -v wtype >/dev/null 2>&1 && sleep 0.12 && " +
+    "case \"$(hyprctl activewindow -j 2>/dev/null | jq -r '.class // empty' 2>/dev/null)\" in " +
+    "com.anthropic.Claude) wtype -M ctrl -M shift -k v -m shift -m ctrl ;; " +
+    "*) wtype -M shift -k Insert -m shift ;; esac"
 
   // A row click: copy, close the popup, then paste into the focused window.
   // It pastes regardless of the "Paste immediately" setting, because the
@@ -1514,7 +1525,7 @@ Panel {
     width: Style.space(38)
     height: Style.space(20)
     radius: height / 2
-    color: checked ? root.barForeground : root.fg(0.14)
+    color: checked ? root.panelForeground : root.fg(0.14)
     Behavior on color { ColorAnimation { duration: 120 } }
 
     Rectangle {
@@ -1555,7 +1566,7 @@ Panel {
       Text {
         width: parent.width
         text: parent.parent.title
-        color: root.barForeground
+        color: root.panelForeground
         elide: Text.ElideRight
         font.family: Style.font.family
         font.pixelSize: Style.font.body
@@ -1564,7 +1575,7 @@ Panel {
         width: parent.width
         visible: text.length > 0
         text: parent.parent.subtitle
-        color: root.barForeground
+        color: root.panelForeground
         opacity: 0.4
         wrapMode: Text.WordWrap
         font.family: Style.font.family
@@ -1612,7 +1623,7 @@ Panel {
 
       Text {
         text: fld.label.toUpperCase()
-        color: root.barForeground
+        color: root.panelForeground
         opacity: 0.4
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
@@ -1626,7 +1637,7 @@ Panel {
         readOnly: true
         selectByMouse: true
         wrapMode: Text.Wrap
-        color: root.barForeground
+        color: root.panelForeground
         font.family: fld.mono ? root.monoFamily : Style.font.family
         font.pixelSize: Style.font.body
       }
@@ -1634,7 +1645,7 @@ Panel {
   }
 
   component SectionHeader: Text {
-    color: root.barForeground
+    color: root.panelForeground
     opacity: 0.4
     x: Style.space(14)
     font.family: Style.font.family
@@ -1646,7 +1657,7 @@ Panel {
     id: act
     property string glyph: ""
     property real restOpacity: 0.45
-    property color tint: root.barForeground
+    property color tint: root.panelForeground
     property string tip: ""
     signal activated
     width: Style.space(22)
@@ -1745,7 +1756,7 @@ Panel {
               Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.glyphBrand
-                color: root.barForeground
+                color: root.panelForeground
                 opacity: 0.85
                 font.family: Style.font.family
                 font.pixelSize: Style.font.body
@@ -1754,7 +1765,7 @@ Panel {
               Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "Clipbasket"
-                color: root.barForeground
+                color: root.panelForeground
                 font.family: Style.font.family
                 font.pixelSize: Style.font.body
                 font.bold: true
@@ -1765,7 +1776,7 @@ Panel {
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
               text: root.glyphCog
-              color: root.barForeground
+              color: root.panelForeground
               opacity: cogArea.containsMouse ? 0.95 : 0.45
               font.family: Style.font.family
               font.pixelSize: Style.font.body
@@ -1798,7 +1809,7 @@ Panel {
               Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.glyphSearch
-                color: root.barForeground
+                color: root.panelForeground
                 opacity: 0.4
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
@@ -1808,7 +1819,7 @@ Panel {
                 id: searchInput
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - Style.space(36)
-                color: root.barForeground
+                color: root.panelForeground
                 font.family: Style.font.family
                 font.pixelSize: Style.font.body
                 selectByMouse: true
@@ -1827,7 +1838,7 @@ Panel {
                   anchors.fill: parent
                   visible: searchInput.text.length === 0
                   text: "Search"
-                  color: root.barForeground
+                  color: root.panelForeground
                   opacity: 0.35
                   font: searchInput.font
                   verticalAlignment: Text.AlignVCenter
@@ -1849,7 +1860,7 @@ Panel {
                 height: Style.space(22)
                 width: chipText.implicitWidth + Style.space(18)
                 radius: height / 2
-                color: selected ? root.barForeground : root.fg(0.05)
+                color: selected ? root.panelForeground : root.fg(0.05)
                 border.width: 1
                 border.color: root.fg(selected ? 0 : 0.12)
 
@@ -1857,7 +1868,7 @@ Panel {
                   id: chipText
                   anchors.centerIn: parent
                   text: root.filterLabels[index]
-                  color: parent.selected ? Color.background : root.barForeground
+                  color: parent.selected ? Color.background : root.panelForeground
                   opacity: parent.selected ? 1 : 0.7
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
@@ -1908,7 +1919,7 @@ Panel {
               Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: String(section).toUpperCase()
-                color: root.barForeground
+                color: root.panelForeground
                 opacity: 0.4
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
@@ -1927,7 +1938,7 @@ Panel {
                   id: pinCount
                   anchors.centerIn: parent
                   text: String(root.pinnedCount)
-                  color: root.barForeground
+                  color: root.panelForeground
                   opacity: 0.55
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
@@ -2029,7 +2040,7 @@ Panel {
                   anchors.centerIn: parent
                   visible: !thumbImage.visible
                   text: clipRow.rowGlyph
-                  color: root.barForeground
+                  color: root.panelForeground
                   opacity: 0.6
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
@@ -2053,7 +2064,7 @@ Panel {
                 // Clip content is data, never markup: a copied "<b>" or "<h2>" must not
                 // render as rich text.
                 textFormat: Text.PlainText
-                color: root.barForeground
+                color: root.panelForeground
                 elide: Text.ElideRight
                 maximumLineCount: 1
                 font.family: Style.font.family
@@ -2067,7 +2078,7 @@ Panel {
                 // Clip content is data, never markup: a copied "<b>" or "<h2>" must not
                 // render as rich text.
                 textFormat: Text.PlainText
-                color: root.barForeground
+                color: root.panelForeground
                 opacity: 0.4
                 elide: Text.ElideRight
                 maximumLineCount: 1
@@ -2083,7 +2094,7 @@ Panel {
                   anchors.left: parent.left
                   anchors.verticalCenter: parent.verticalCenter
                   text: clipRow.rowTime
-                  color: root.barForeground
+                  color: root.panelForeground
                   opacity: 0.4
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
@@ -2109,7 +2120,7 @@ Panel {
                   RowAction {
                     anchors.verticalCenter: parent.verticalCenter
                     glyph: root.glyphTrash
-                    tint: clipRow.armed ? root.dangerTint : root.barForeground
+                    tint: clipRow.armed ? root.dangerTint : root.panelForeground
                     restOpacity: clipRow.armed ? 1.0 : 0.45
                     onActivated: root.deleteClip(clipRow.rowIndex)
                   }
@@ -2139,7 +2150,7 @@ Panel {
                       width: copyLabel.implicitWidth + Style.space(16)
                       height: Style.space(22)
                       radius: height / 2
-                      color: root.barForeground
+                      color: root.panelForeground
                       // Square off the shared edge when the chevron is present.
                       Rectangle {
                         visible: clipRow.hasVariants
@@ -2171,7 +2182,7 @@ Panel {
                       width: Style.space(18)
                       height: Style.space(22)
                       radius: height / 2
-                      color: root.barForeground
+                      color: root.panelForeground
                       Rectangle {
                         anchors.left: parent.left
                         anchors.top: parent.top
@@ -2228,7 +2239,7 @@ Panel {
               width: parent.width
               horizontalAlignment: Text.AlignHCenter
               text: root.loading && !root.loaded ? "Loading…" : root.emptyTitle
-              color: root.barForeground
+              color: root.panelForeground
               opacity: 0.55
               wrapMode: Text.WordWrap
               font.family: Style.font.family
@@ -2240,7 +2251,7 @@ Panel {
               horizontalAlignment: Text.AlignHCenter
               visible: text.length > 0 && !(root.loading && !root.loaded)
               text: root.emptyDetail
-              color: root.barForeground
+              color: root.panelForeground
               opacity: 0.35
               wrapMode: Text.WordWrap
               font.family: Style.font.family
@@ -2271,7 +2282,7 @@ Panel {
               text: root.notice.length > 0 ? root.notice
                   : root.warning.length > 0 ? root.warning
                   : root.countLabel
-              color: root.barForeground
+              color: root.panelForeground
               opacity: root.notice.length > 0 ? 0.7 : 0.4
               elide: Text.ElideRight
               font.family: Style.font.family
@@ -2284,7 +2295,7 @@ Panel {
               anchors.verticalCenter: parent.verticalCenter
               visible: root.globalShortcut.length > 0
               text: root.globalShortcut
-              color: root.barForeground
+              color: root.panelForeground
               opacity: 0.4
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
@@ -2333,7 +2344,7 @@ Panel {
           text: root.detailDimensions.length > 0
             ? root.detailDimensions + "  ·  Esc or click to close"
             : "Esc or click to close"
-          color: root.barForeground
+          color: root.panelForeground
           opacity: 0.45
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
@@ -2383,7 +2394,7 @@ Panel {
                 anchors.rightMargin: Style.space(8)
                 anchors.verticalCenter: parent.verticalCenter
                 text: modelData.label
-                color: root.barForeground
+                color: root.panelForeground
                 elide: Text.ElideRight
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
@@ -2454,7 +2465,7 @@ Panel {
                 Text {
                   anchors.verticalCenter: parent.verticalCenter
                   text: root.glyphBack
-                  color: root.barForeground
+                  color: root.panelForeground
                   opacity: detailBackHover.containsMouse ? 0.9 : 0.5
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
@@ -2463,7 +2474,7 @@ Panel {
                 Text {
                   anchors.verticalCenter: parent.verticalCenter
                   text: "Clip details"
-                  color: root.barForeground
+                  color: root.panelForeground
                   font.family: Style.font.family
                   font.pixelSize: Style.font.body
                   font.bold: true
@@ -2493,7 +2504,7 @@ Panel {
                 id: kindLabel
                 anchors.centerIn: parent
                 text: root.detailKindLabel.toUpperCase()
-                color: root.barForeground
+                color: root.panelForeground
                 opacity: 0.6
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
@@ -2509,7 +2520,7 @@ Panel {
             // Clip content is data, never markup: a copied "<b>" or "<h2>" must not
             // render as rich text.
             textFormat: Text.PlainText
-            color: root.barForeground
+            color: root.panelForeground
             opacity: 0.55
             elide: Text.ElideRight
             maximumLineCount: 2
@@ -2544,7 +2555,7 @@ Panel {
               width: parent.width - Style.space(28)
               visible: root.detailLoading || root.detailError.length > 0
               text: root.detailError.length > 0 ? root.detailError : "Loading clip…"
-              color: root.detailError.length > 0 ? root.dangerTint : root.barForeground
+              color: root.detailError.length > 0 ? root.dangerTint : root.panelForeground
               opacity: root.detailError.length > 0 ? 0.85 : 0.5
               wrapMode: Text.WordWrap
               font.family: Style.font.family
@@ -2609,7 +2620,7 @@ Panel {
                     id: expandHint
                     anchors.centerIn: parent
                     text: root.glyphExpand + "  Space"
-                    color: root.barForeground
+                    color: root.panelForeground
                     font.family: Style.font.family
                     font.pixelSize: Style.font.caption
                   }
@@ -2652,7 +2663,7 @@ Panel {
 
               Text {
                 text: root.detailFileRows.length === 1 ? "FILE" : "FILES"
-                color: root.barForeground
+                color: root.panelForeground
                 opacity: 0.35
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
@@ -2693,7 +2704,7 @@ Panel {
                     // Clip content is data, never markup: a copied "<b>" or "<h2>" must not
                     // render as rich text.
                     textFormat: Text.PlainText
-                    color: root.barForeground
+                    color: root.panelForeground
                     opacity: 0.55
                     font.family: Style.font.family
                     font.pixelSize: Style.font.body
@@ -2716,7 +2727,7 @@ Panel {
                         // Clip content is data, never markup: a copied "<b>" or "<h2>" must not
                         // render as rich text.
                         textFormat: Text.PlainText
-                        color: root.barForeground
+                        color: root.panelForeground
                         elide: Text.ElideMiddle
                         width: Math.min(implicitWidth, parent.width - (dirBadge.visible ? dirBadge.width + Style.space(6) : 0))
                         font.family: Style.font.family
@@ -2736,7 +2747,7 @@ Panel {
                           id: dirBadgeText
                           anchors.centerIn: parent
                           text: "FOLDER"
-                          color: root.barForeground
+                          color: root.panelForeground
                           opacity: 0.6
                           font.family: Style.font.family
                           font.pixelSize: Style.font.caption
@@ -2750,7 +2761,7 @@ Panel {
                       // Clip content is data, never markup: a copied "<b>" or "<h2>" must not
                       // render as rich text.
                       textFormat: Text.PlainText
-                      color: root.barForeground
+                      color: root.panelForeground
                       opacity: 0.38
                       elide: Text.ElideMiddle
                       font.family: root.monoFamily
@@ -2825,7 +2836,7 @@ Panel {
               anchors.fill: parent
               verticalAlignment: Text.AlignVCenter
               text: root.notice
-              color: root.barForeground
+              color: root.panelForeground
               opacity: 0.7
               elide: Text.ElideRight
               font.family: Style.font.family
@@ -2846,7 +2857,7 @@ Panel {
               RowAction {
                 anchors.verticalCenter: parent.verticalCenter
                 glyph: root.glyphTrash
-                tint: root.armedDeleteId === root.detailClipId ? root.dangerTint : root.barForeground
+                tint: root.armedDeleteId === root.detailClipId ? root.dangerTint : root.panelForeground
                 restOpacity: root.armedDeleteId === root.detailClipId ? 1.0 : 0.45
                 onActivated: root.deleteFromDetail()
               }
@@ -2885,7 +2896,7 @@ Panel {
                   id: openLabel
                   anchors.centerIn: parent
                   text: root.glyphOpen + "  Open"
-                  color: root.barForeground
+                  color: root.panelForeground
                   opacity: 0.85
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
@@ -2913,7 +2924,7 @@ Panel {
                   id: mdLabel
                   anchors.centerIn: parent
                   text: "Copy as Markdown"
-                  color: root.barForeground
+                  color: root.panelForeground
                   opacity: 0.85
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
@@ -2932,7 +2943,7 @@ Panel {
                 width: detailCopyLabel.implicitWidth + Style.space(22)
                 height: Style.space(24)
                 radius: height / 2
-                color: root.barForeground
+                color: root.panelForeground
 
                 Text {
                   id: detailCopyLabel
@@ -2990,7 +3001,7 @@ Panel {
             Text {
               anchors.verticalCenter: parent.verticalCenter
               text: root.glyphBack
-              color: root.barForeground
+              color: root.panelForeground
               opacity: backHover.containsMouse ? 0.9 : 0.5
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
@@ -2999,7 +3010,7 @@ Panel {
             Text {
               anchors.verticalCenter: parent.verticalCenter
               text: "Settings"
-              color: root.barForeground
+              color: root.panelForeground
               font.family: Style.font.family
               font.pixelSize: Style.font.body
               font.bold: true
@@ -3030,7 +3041,7 @@ Panel {
               id: shortcutText
               anchors.centerIn: parent
               text: root.shortcutLabelText
-              color: root.barForeground
+              color: root.panelForeground
               opacity: 0.75
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
@@ -3067,7 +3078,7 @@ Panel {
               anchors.fill: parent
               anchors.margins: Style.space(6)
               text: String(root.maxClips)
-              color: root.barForeground
+              color: root.panelForeground
               horizontalAlignment: Text.AlignRight
               // Digits only, but no range validator: IntValidator rejects an
               // out-of-range value instead of clamping it, so typing 5 left the
@@ -3150,7 +3161,7 @@ Panel {
               id: verText
               anchors.centerIn: parent
               text: root.pluginVersion
-              color: root.barForeground
+              color: root.panelForeground
               opacity: 0.7
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
@@ -3163,7 +3174,7 @@ Panel {
           width: parent.width - Style.space(28)
           wrapMode: Text.WordWrap
           text: "Updates, theme and paste-permission settings are absent by design: pacman owns updates, Omarchy owns theming, and Wayland needs no accessibility grant."
-          color: root.barForeground
+          color: root.panelForeground
           opacity: 0.35
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
