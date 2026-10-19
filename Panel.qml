@@ -851,16 +851,19 @@ Panel {
     }
   }
 
-  // Shift+Insert pastes in terminals as well as in GUI apps, where Ctrl+V
-  // would only work in the latter. Omarchy's own clipboard uses it too.
-  // Electron apps with a built-in terminal (Claude Desktop) ignore
-  // Shift+Insert there, so they get Ctrl+Shift+V, which pastes in both
-  // their terminal and their text fields.
+  // The same keys as Omarchy's universal paste (SUPER+V): Shift+Insert in a
+  // terminal (windows Omarchy tags "terminal"), Ctrl+V everywhere else, where
+  // Shift+Insert only pastes in some apps (Chromium does, most others don't).
+  // Electron apps with a built-in terminal (Claude Desktop) ignore both there,
+  // so they get Ctrl+Shift+V, which pastes in their terminal and text fields.
   readonly property string pasteKeystrokeCommand:
-    "command -v wtype >/dev/null 2>&1 && sleep 0.12 && " +
-    "case \"$(hyprctl activewindow -j 2>/dev/null | jq -r '.class // empty' 2>/dev/null)\" in " +
-    "com.anthropic.Claude) wtype -M ctrl -M shift -k v -m shift -m ctrl ;; " +
-    "*) wtype -M shift -k Insert -m shift ;; esac"
+    "command -v wtype >/dev/null 2>&1 && sleep 0.15 && " +
+    "w=\"$(hyprctl activewindow -j 2>/dev/null)\"; " +
+    "if [ \"$(printf '%s' \"$w\" | jq -r '.class // empty' 2>/dev/null)\" = com.anthropic.Claude ]; then " +
+    "wtype -M ctrl -M shift -k v -m shift -m ctrl; " +
+    "elif printf '%s' \"$w\" | jq -e '(.tags // []) | map(sub(\"\\\\*$\"; \"\")) | index(\"terminal\")' >/dev/null 2>&1; then " +
+    "wtype -M shift -k Insert -m shift; " +
+    "else wtype -M ctrl -k v -m ctrl; fi"
 
   // A row click: copy, close the popup, then paste into the focused window.
   // It pastes regardless of the "Paste immediately" setting, because the
