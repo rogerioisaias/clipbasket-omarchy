@@ -96,8 +96,8 @@ Panel {
   // Chip label -> backend `--filter` value. Order and wording mirror
   // PopupHeader.tsx exactly; there is deliberately no "Pinned" chip because
   // pins are a section, not a filter.
-  readonly property var filterKeys: ["all", "text", "url", "image", "files", "saved"]
-  readonly property var filterLabels: ["All", "Text", "Links", "Images", "Files", "Saved"]
+  readonly property var filterKeys: ["all", "saved", "text", "url", "image", "files"]
+  readonly property var filterLabels: ["All", "Saved", "Text", "Links", "Images", "Files"]
 
   readonly property string settingsDir: "${XDG_CONFIG_HOME:-$HOME/.config}/clipbasket"
   readonly property string settingsPath: root.settingsDir + "/settings.json"
