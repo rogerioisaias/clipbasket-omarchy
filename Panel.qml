@@ -844,7 +844,7 @@ Panel {
       // The wtype guard stays in the command as well as in the setting: the
       // binary can be uninstalled between the probe and the keystroke.
       if (root.pasteSelectedClipImmediately && root.wtypeAvailable) {
-        root.runAction(root.pasteKeystrokeCommand, false);
+        root.runAction(root.pasteKeystrokeCommand(row.kind), false);
       }
     } else {
       root.showNotice("Copied.");
@@ -856,14 +856,18 @@ Panel {
   // Shift+Insert only pastes in some apps (Chromium does, most others don't).
   // Electron apps with a built-in terminal (Claude Desktop) ignore both there,
   // so they get Ctrl+Shift+V, which pastes in their terminal and text fields.
-  readonly property string pasteKeystrokeCommand:
-    "command -v wtype >/dev/null 2>&1 && sleep 0.15 && " +
+  // Ctrl+Shift+V is "paste as plain text" there, so it drops images and
+  // files: those kinds always get Ctrl+V.
+  function pasteKeystrokeCommand(kind) {
+    var plainOnlyShortcut = kind !== "image" && kind !== "files";
+    return "command -v wtype >/dev/null 2>&1 && sleep 0.15 && " +
     "w=\"$(hyprctl activewindow -j 2>/dev/null)\"; " +
-    "if [ \"$(printf '%s' \"$w\" | jq -r '.class // empty' 2>/dev/null)\" = com.anthropic.Claude ]; then " +
+    "if " + (plainOnlyShortcut ? "true" : "false") + " && [ \"$(printf '%s' \"$w\" | jq -r '.class // empty' 2>/dev/null)\" = com.anthropic.Claude ]; then " +
     "wtype -M ctrl -M shift -k v -m shift -m ctrl; " +
     "elif printf '%s' \"$w\" | jq -e '(.tags // []) | map(sub(\"\\\\*$\"; \"\")) | index(\"terminal\")' >/dev/null 2>&1; then " +
     "wtype -M shift -k Insert -m shift; " +
-    "else wtype -M ctrl -k v -m ctrl; fi"
+    "else wtype -M ctrl -k v -m ctrl; fi";
+  }
 
   // A row click: copy, close the popup, then paste into the focused window.
   // It pastes regardless of the "Paste immediately" setting, because the
@@ -874,7 +878,7 @@ Panel {
     root.clearTransientState();
     root.runAction(root.dbCmd("copy " + row.clipId), false);
     root.close();
-    if (root.wtypeAvailable) root.runAction(root.pasteKeystrokeCommand, false);
+    if (root.wtypeAvailable) root.runAction(root.pasteKeystrokeCommand(row.kind), false);
   }
 
   // The desktop app derives Markdown by running turndown over the clip's
