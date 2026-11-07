@@ -19,7 +19,6 @@ readonly PLUGIN_ID="clipbasket.clipboard"
 # The keybinding Omarchy ships for its own clipboard overlay, and the one we
 # swap ourselves into on `make-default`.
 readonly DEFAULT_KEY="SUPER + CTRL + V"
-readonly TOGGLE_COMMAND="omarchy-shell shell toggle $PLUGIN_ID"
 readonly OMARCHY_CLIPBOARD_PLUGIN="omarchy.clipboard"
 
 # Everything the managed block in bindings.lua is delimited by. These are
@@ -41,6 +40,9 @@ DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 
 PLUGIN_DIR="$CONFIG_HOME/omarchy/plugins/$PLUGIN_ID"
+# The shortcut opens the popup at the mouse pointer (bin/clipbasket-at-cursor),
+# not under the bar icon.
+TOGGLE_COMMAND="$PLUGIN_DIR/bin/clipbasket-at-cursor"
 SETTINGS_FILE="${CLIPBASKET_SETTINGS:-$CONFIG_HOME/clipbasket/settings.json}"
 # History lives under XDG_STATE_HOME, not XDG_DATA_HOME: it is regenerable machine
 # state, not user data. clipbasket-db and clipbasket-capture resolve it the same

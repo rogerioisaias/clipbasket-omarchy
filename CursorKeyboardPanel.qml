@@ -172,9 +172,17 @@ PanelWindow {
   readonly property real availableCardWidth: screenW > 0
     ? Math.max(120, screenW - ((barPos === "left" || barPos === "right") ? barThickness + gap + margin : margin * 2))
     : 0
-  readonly property real availableCardHeight: screenH > 0
-    ? Math.max(120, screenH - ((barPos === "top" || barPos === "bottom") ? barThickness + gap + margin : margin * 2))
-    : 0
+  // At the cursor the card sits wholly above or below the pointer's line,
+  // leaving a band around it clear so the field being pasted into stays
+  // visible. It takes whichever side has more room.
+  readonly property real cursorBand: Style.space(36)
+  readonly property real cursorLocalX: cursorScreen ? cursorPoint.x - cursorScreen.x : 0
+  readonly property real cursorLocalY: cursorScreen ? cursorPoint.y - cursorScreen.y : 0
+  readonly property real roomBelowCursor: screenH - cursorLocalY - cursorBand - margin
+  readonly property real roomAboveCursor: cursorLocalY - cursorBand - margin
+  readonly property real availableCardHeight: screenH <= 0 ? 0
+    : cursorScreen ? Math.max(120, Math.max(roomBelowCursor, roomAboveCursor))
+    : Math.max(120, screenH - ((barPos === "top" || barPos === "bottom") ? barThickness + gap + margin : margin * 2))
   readonly property real verticalContentInset: padding * 2 + Border.top(borderSpec) + Border.bottom(borderSpec)
 
   function fittedContentWidth(width, cap) {
@@ -218,9 +226,13 @@ PanelWindow {
     : (typeof bar.barSizeFor === "function" && screen ? bar.barSizeFor(screen.name) : (bar.barSize || 0))
   readonly property point cardOrigin: {
     if (cursorScreen) {
-      // Top-left corner just past the pointer, kept on screen.
-      var cx = cursorPoint.x - cursorScreen.x + Style.space(4)
-      var cy = cursorPoint.y - cursorScreen.y + Style.space(4)
+      // Below the pointer's line when it fits (or has the more room),
+      // otherwise above it; never across it. Horizontally it starts just
+      // left of the pointer, kept on screen.
+      var cx = cursorLocalX - Style.space(24)
+      var cy = (roomBelowCursor >= contentHeight || roomBelowCursor >= roomAboveCursor)
+        ? cursorLocalY + cursorBand
+        : cursorLocalY - cursorBand - contentHeight
       cx = Math.max(margin, Math.min(cx, screenW - contentWidth - margin))
       cy = Math.max(margin, Math.min(cy, screenH - contentHeight - margin))
       return Qt.point(Math.round(cx), Math.round(cy))
